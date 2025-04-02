@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DNA Synthesis Animation</title>
+  <style>
+    html, body {
+      background-color: transparent;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      font-family: monospace;
+      overflow: hidden;
+    }
+
+    .dna-container {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      width: auto;
+      padding: 50px 20px;
+    }
+
+    .strand-container {
+      display: flex;
+      position: relative;
+    }
+
+    .base-pair {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0 1px;
+      position: relative;
+    }
+
+    .base {
+      font-size: 28px;
+      width: 30px;
+      text-align: center;
+      position: relative;
+    }
+
+    .template-base {
+      color: #3366cc;
+      transform: rotate(180deg);
+    }
+
+    .complementary-base {
+      color: #cc3366;
+      opacity: 0;
+    }
+
+    .visible {
+      opacity: 1;
+      transition: opacity 0.3s ease-in-out;
+    }
+
+    .bond {
+      width: 2px;
+      height: 15px;
+      background-color: #777;
+      opacity: 0;
+    }
+
+    .visible-bond {
+      opacity: 1;
+      transition: opacity 0.3s ease-in-out;
+    }
+
+    .enzyme {
+      position: absolute;
+      width: 60px;
+      height: 30px;
+      background-color: #4CAF50;
+      border-radius: 50%;
+      color: white;
+      font-size: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      opacity: 0.9;
+      top: 35px;
+      left: 0;
+      transition: left 0.5s ease-in-out;
+    }
+  </style>
+</head>
+<body>
+  <div class="dna-container">
+    <div class="strand-container" id="strandContainer"></div>
+    <div class="enzyme" id="polymerase">RT</div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const templateSequence = "ATCCADASDASDASDASDASDASDASDA";
+
+      const complementaryBase = {
+        'A': 'T',
+        'T': 'A',
+        'G': 'C',
+        'C': 'G'
+      };
+
+      const strandContainer = document.getElementById('strandContainer');
+      const polymerase = document.getElementById('polymerase');
+      const basePairs = [];
+
+      let animatableIndexes = [];
+
+      function initializeStrands() {
+        strandContainer.innerHTML = '';
+        animatableIndexes = [];
+
+        for (let i = 0; i < templateSequence.length; i++) {
+          const rawChar = templateSequence[i];
+          const base = rawChar === 'U' ? 'T' : rawChar;
+          const upperBase = base.toUpperCase();
+          const isSpace = rawChar === ' ';
+
+          const baseElement = document.createElement('div');
+          baseElement.className = 'base-pair';
+          baseElement.id = `pair-${i}`;
+
+          const compBase = document.createElement('div');
+          compBase.className = 'base complementary-base';
+          compBase.id = `comp-${i}`;
+          compBase.textContent = isSpace ? '' : (complementaryBase[upperBase] || base);
+
+          const bond = document.createElement('div');
+          bond.className = 'bond';
+          bond.id = `bond-${i}`;
+          if (isSpace) {
+            compBase.style.visibility = 'hidden';
+            bond.style.visibility = 'hidden';
+          } else {
+            animatableIndexes.push(i);
+          }
+
+          const templateBase = document.createElement('div');
+          templateBase.className = 'base template-base';
+          templateBase.textContent = rawChar;
+
+          baseElement.appendChild(compBase);
+          baseElement.appendChild(bond);
+          baseElement.appendChild(templateBase);
+          strandContainer.appendChild(baseElement);
+          basePairs.push(baseElement);
+        }
+
+        setTimeout(() => {
+          positionPolymerase(animatableIndexes[0] || 0);
+        }, 100);
+      }
+
+      function positionPolymerase(index) {
+        const basePair = document.getElementById(`pair-${index}`);
+        if (!basePair) return;
+
+        const basePairRect = basePair.getBoundingClientRect();
+        const containerRect = strandContainer.getBoundingClientRect();
+        const basePairLeft = basePairRect.left - containerRect.left;
+
+        polymerase.style.left = `${basePairLeft}px`;
+      }
+
+      function addComplementaryBase(animIndex) {
+        if (animIndex >= animatableIndexes.length) return;
+
+        const seqIndex = animatableIndexes[animIndex];
+        positionPolymerase(seqIndex);
+
+        const compElement = document.getElementById(`comp-${seqIndex}`);
+        const bondElement = document.getElementById(`bond-${seqIndex}`);
+
+        setTimeout(() => {
+          compElement.classList.add('visible');
+          bondElement.classList.add('visible-bond');
+
+          setTimeout(() => {
+            addComplementaryBase(animIndex + 1);
+          }, 300);
+        }, 200);
+      }
+
+      window.addEventListener('resize', function () {
+        const currentAnimIndex = animatableIndexes.indexOf(polymerase.dataset.currentIndex || 0);
+        if (currentAnimIndex >= 0) {
+          positionPolymerase(animatableIndexes[currentAnimIndex]);
+        } else {
+          positionPolymerase(animatableIndexes[0] || 0);
+        }
+      });
+
+      initializeStrands();
+      setTimeout(() => {
+        addComplementaryBase(0);
+      }, 1000);
+    });
+  </script>
+</body>
+</html>
