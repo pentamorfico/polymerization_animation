@@ -90,7 +90,7 @@
       opacity: 0.9;
       top: 35px;
       left: 0;
-      transition: left 0.5s ease-in-out;
+      transition: left 0.4s ease-in-out;
     }
   </style>
 </head>
@@ -102,13 +102,16 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      const templateSequence = "ATCCADASDASDASDASDASDASDASDA";
+      const urlParams = new URLSearchParams(window.location.search);
+      const userSequence = urlParams.get('sequence') || 'ATGCGTACGTAGCTAGCTAGCTAGCAT';
+      const templateSequence = userSequence.toUpperCase().replace(/[^ATGC]/g, 'N'); // sanitize
 
       const complementaryBase = {
         'A': 'T',
         'T': 'A',
         'G': 'C',
-        'C': 'G'
+        'C': 'G',
+        'N': 'N'
       };
 
       const strandContainer = document.getElementById('strandContainer');
@@ -116,6 +119,7 @@
       const basePairs = [];
 
       let animatableIndexes = [];
+      let currentAnimIndex = 0;
 
       function initializeStrands() {
         strandContainer.innerHTML = '';
@@ -171,10 +175,12 @@
         const basePairLeft = basePairRect.left - containerRect.left;
 
         polymerase.style.left = `${basePairLeft}px`;
+        polymerase.dataset.currentIndex = index;
       }
 
       function addComplementaryBase(animIndex) {
         if (animIndex >= animatableIndexes.length) return;
+        currentAnimIndex = animIndex;
 
         const seqIndex = animatableIndexes[animIndex];
         positionPolymerase(seqIndex);
@@ -186,19 +192,17 @@
           compElement.classList.add('visible');
           bondElement.classList.add('visible-bond');
 
+          const nextDelay = 200 + Math.random() * 150;
+
           setTimeout(() => {
             addComplementaryBase(animIndex + 1);
-          }, 300);
-        }, 200);
+          }, nextDelay);
+        }, 150);
       }
 
       window.addEventListener('resize', function () {
-        const currentAnimIndex = animatableIndexes.indexOf(polymerase.dataset.currentIndex || 0);
-        if (currentAnimIndex >= 0) {
-          positionPolymerase(animatableIndexes[currentAnimIndex]);
-        } else {
-          positionPolymerase(animatableIndexes[0] || 0);
-        }
+        const index = parseInt(polymerase.dataset.currentIndex || "0", 10);
+        positionPolymerase(index);
       });
 
       initializeStrands();
@@ -209,3 +213,4 @@
   </script>
 </body>
 </html>
+
